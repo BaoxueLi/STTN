@@ -14,7 +14,8 @@ import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+    # import ipdb
+    # ipdb.set_trace()
     days = 10       #选择训练的天数
     val_days = 3    #选择验证的天数
     
@@ -22,22 +23,23 @@ if __name__ == "__main__":
     val_num = 288*val_days
     row_num = train_num + val_num
 
-    v = pd.read_csv("PEMSD7/V_25.csv", nrows = row_num, header= -1)
-    A = pd.read_csv("PEMSD7/W_25.csv", header= -1)          #获取邻接矩阵
+    # v = pd.read_csv("PEMSD7/V_25.csv", nrows = row_num, header= -1)
+    v = pd.read_csv("PEMSD7/V_25.csv", nrows = row_num, header= None)
+    A = pd.read_csv("PEMSD7/W_25.csv", header= None)          #获取邻接矩阵
     
 
     A = np.array(A)
-    A = torch.tensor(A, dtype=torch.float32)
+    A = torch.tensor(A, dtype=torch.float32).to(device)
        
     v = np.array(v)
     v = v.T
-    v = torch.tensor(v, dtype=torch.float32)
+    v = torch.tensor(v, dtype=torch.float32).to(device)
     # 最终 v shape:[N, T]。  N=25, T=row_num
     
     
     # 模型参数
     A = A           # 邻接矩阵
-    in_channels=1   # 输入通道数。只有速度信息，所以通道为1
+    in_channels=1   # 输入通道数。只有速度（汽车）信息，所以通道为1
     embed_size=64   # Transformer通道数
     time_num = 288  # 1天时间间隔数量
     num_layers=1    # Spatial-temporal block 堆叠层数
@@ -57,7 +59,7 @@ if __name__ == "__main__":
         T_dim, 
         output_T_dim, 
         heads
-    )   
+    ).to(device)   
     
     # optimizer, lr, loss按论文要求
     optimizer = torch.optim.RMSprop(model.parameters(), lr=0.001)
@@ -75,7 +77,8 @@ if __name__ == "__main__":
         y = v[:, t+14:t+21:3]
         # x shape:[1, N, T_dim] 
         # y shape:[N, output_T_dim]
-        
+        # import ipdb
+        # ipdb.set_trace()
         out = model(x, t)
         loss = criterion(out, y) 
         
@@ -88,7 +91,7 @@ if __name__ == "__main__":
         optimizer.step() 
         
         pltx.append(t)
-        plty.append(loss.detach().numpy())
+        plty.append(loss.detach().cpu().numpy())
     
     plt.plot(pltx, plty, label="STTN train")
     plt.title("ST-Transformer train")

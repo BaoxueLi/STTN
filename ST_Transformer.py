@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 from GCN_models import GCN
 from One_hot_encoder import One_hot_encoder
-
+DEV = torch.device('cuda')
 class SSelfAttention(nn.Module):
     def __init__(self, embed_size, heads):
         super(SSelfAttention, self).__init__()
@@ -159,9 +159,8 @@ class STransformer(nn.Module):
         D_S = D_S.expand(T, N, C)
         D_S = D_S.permute(1, 0, 2)
         
-        
         # GCN 部分
-        X_G = torch.Tensor(query.shape[0], 0, query.shape[2])
+        X_G = torch.Tensor(query.shape[0], 0, query.shape[2]).to(DEV)
         self.adj = self.adj.unsqueeze(0).unsqueeze(0)
         self.adj = self.norm_adj(self.adj)
         self.adj = self.adj.squeeze(0).squeeze(0)
@@ -211,9 +210,8 @@ class TTransformer(nn.Module):
 
     def forward(self, value, key, query, t):
         N, T, C = query.shape
-        
-        D_T = self.one_hot(t, N, T)                          # temporal embedding选用one-hot方式 或者
-        D_T = self.temporal_embedding(torch.arange(0, T))    # temporal embedding选用nn.Embedding
+        D_T = self.one_hot(t, N, T)        # temporal embedding选用one-hot方式 或者
+        D_T = self.temporal_embedding(torch.arange(0, T).to(DEV))    # temporal embedding选用nn.Embedding
         D_T = D_T.expand(N, T, C)
 
 

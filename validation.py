@@ -33,23 +33,23 @@ if __name__ == "__main__":
     val_num = 288*val_days
     row_num = train_num + val_num  
     
-    v = pd.read_csv("PEMSD7/V_25.csv", nrows = row_num, header= -1)
-    A = pd.read_csv("PEMSD7/W_25.csv", header= -1)
+    v = pd.read_csv("PEMSD7/V_25.csv", nrows = row_num, header= None)
+    A = pd.read_csv("PEMSD7/W_25.csv", header= None)
 
     A = np.array(A)
-    A = torch.tensor(A, dtype=torch.float32)      
+    A = torch.tensor(A, dtype=torch.float32).to(device)    
     v = np.array(v)
     v = v.T
-    v = torch.tensor(v, dtype=torch.float32)
+    v = torch.tensor(v, dtype=torch.float32).to(device)
     
            
     #加载模型
-    model = torch.load('model.pth')
+    model = torch.load('model.pth').to(device)
     
     criterion1 = nn.L1Loss()    #MAE
     #criterion2 =               #MAPE 
     criterion3 = nn.MSELoss()   #RMSE
-    
+    ground=[]; predict=[]; attr=0; step=0
     pltx=[]
     plty=[]
     for t in range( train_num , row_num-21  ):
@@ -58,7 +58,10 @@ if __name__ == "__main__":
         y = v[:, t+14:t+21:3]
         
         out = model(x, t)
-                
+        ground.append(y[attr,step].item())
+        predict.append(out[attr,step].item())
+        # import ipdb
+        # ipdb.set_trace()        
         loss1 = criterion1(out, y ) 
         loss2 = MAE(out, y)
         loss3 = torch.sqrt(criterion3(out, y ) )
@@ -69,7 +72,7 @@ if __name__ == "__main__":
             print("RMSE loss", loss3)
             print("\n")
         pltx.append(t)
-        plty.append(loss1.detach().numpy())
+        plty.append(loss1.detach().cpu().numpy())
         
         if t%288 == 0:         #画出每天MAE图
             plt.plot(pltx, plty, label=t)
@@ -83,8 +86,13 @@ if __name__ == "__main__":
     plt.xlabel("t")
     plt.ylabel("MAE loss")
     plt.legend()
-    plt.show()    
-    
+    plt.savefig('test_loss.pdf',dpi=300)
+    plt.clf()
+    # plt.show()    
+    plt.plot(predict)
+    plt.plot(ground)
+    plt.savefig('test_time.pdf',dpi=300)
+    plt.show()
     #print("输出结果",out)
     #print("输出形状", out.shape)
 

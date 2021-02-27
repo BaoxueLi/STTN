@@ -195,8 +195,6 @@ class TTransformer(nn.Module):
         self.one_hot = One_hot_encoder(embed_size, time_num)          # temporal embedding选用one-hot方式 或者
         self.temporal_embedding = nn.Embedding(time_num, embed_size)  # temporal embedding选用nn.Embedding
 
-
-        
         self.attention = TSelfAttention(embed_size, heads)
         self.norm1 = nn.LayerNorm(embed_size)
         self.norm2 = nn.LayerNorm(embed_size)
@@ -344,13 +342,14 @@ class STTransformer(nn.Module):
     def forward(self, x, t):
         # input x shape[ C, N, T] 
         # C:通道数量。  N:传感器数量。  T:时间数量
-        
+        import ipdb
+        ipdb.set_trace()
         x = x.unsqueeze(0)
-        input_Transformer = self.conv1(x)        
+        input_Transformer = self.conv1(x)  #conv是将第2个维度作为通道维度      
         input_Transformer = input_Transformer.squeeze(0)
         input_Transformer = input_Transformer.permute(1, 2, 0)  
         
-        #input_Transformer shape[N, T, C]
+        #input_Transformer shape[N, T, C] # N指measure          
         output_Transformer = self.Transformer(input_Transformer, t)  
         output_Transformer = output_Transformer.permute(1, 0, 2)
         #output_Transformer shape[T, N, C]
